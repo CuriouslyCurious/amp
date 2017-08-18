@@ -91,11 +91,11 @@ def download_modules(url):
         link = "http://amp.dascene.net/"+mod[0]    
         path = os.path.join(artist.handle, remove_bad_pathchars(mod[1]))
         data = urllib.request.urlopen(link).read()
-        print("Downloading %s." % mod[1])
+        print("'Downloading %s'" % mod[1])
         with open(path+".mod", "wb") as f:
             f.write(data)
     
-    def commands(parser):
+def commands(parser):
     group = parser.add_mutually_exclusive_group()
     parser.add_argument("url", 
                         help="An URL for a page to download all the modules from.")
