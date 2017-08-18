@@ -11,6 +11,8 @@ import sys
 import gzip
 import argparse
 import urllib.request
+import threading
+from queue import Queue
 from bs4 import BeautifulSoup
 
 class Artist:
@@ -23,6 +25,23 @@ class Artist:
     def __repr__(self):
         return ("Handle: %s\nReal Name: %s\nCountry: %s\nEx Handles: %s\nGroups: %s" 
                 % (self.handle, self.real_name, self.country, ",".join(self.ex_handles), ",".join(self.groups)))
+
+class Downloader(threading.Thread):
+    def __init__(self, queue):
+        threading.Thread.__init__(self)
+        self.queue = queue
+
+    def run(self):
+        while True:
+            directory, link = self.queue.get()
+            self.download(directory, link)
+            self.queue.task_done()
+
+    def download(self, path, link):
+        data = urllib.request.urlopen(link).read()
+        print("'Downloading %s'" % path.split("/")[-1])
+        with open(path+".mod", "wb") as f:
+            f.write(data)
 
 
 def get_artist_url(search, option="handle"):
@@ -84,16 +103,22 @@ def download_modules(url):
     except OSError:
         pass
     
+    # Create 4 threads
+    queue = Queue()
+    for x in range(4):
+        worker = Downloader(queue)
+        worker.daemon = True
+        worker.start()
+
     for mod in modules:
         if mod[1]+".mod" in os.listdir(artist.handle):
             print("'%s.mod' already exists, skipping..." % mod[1])
             continue
-        link = "http://amp.dascene.net/"+mod[0]    
         path = os.path.join(artist.handle, remove_bad_pathchars(mod[1]))
-        data = urllib.request.urlopen(link).read()
-        print("'Downloading %s'" % mod[1])
-        with open(path+".mod", "wb") as f:
-            f.write(data)
+        link = "http://amp.dascene.net/"+mod[0]    
+        queue.put((path, link))
+    # Wait for all threads to finish
+    queue.join()
     
 def commands(parser):
     group = parser.add_mutually_exclusive_group()
@@ -105,7 +130,7 @@ def commands(parser):
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="A script that eases mass-downloading \
-											of module files from http://amp.dascene.net")
+						of module files from http://amp.dascene.net")
     parser = commands(parser)
     args = parser.parse_args()
     if args.url:
@@ -116,7 +141,7 @@ if __name__ == "__main__":
                 raise Exception("Not a valid URL.")
                 sys.exit()
             content = url.read()
-            download_modules(content)            
+            download_modules(content) 
         else:
             print("ERROR: Not a valid amp.dascene.net URL.")
     elif args.find:
