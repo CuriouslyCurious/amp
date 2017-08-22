@@ -40,8 +40,9 @@ class Downloader(threading.Thread):
     def download(self, path, link):
         data = urllib.request.urlopen(link).read()
         print("'Downloading %s'" % path.split("/")[-1])
+        # Should get a gzip archive as data
         with open(path+".mod", "wb") as f:
-            f.write(data)
+            f.write(gzip.decompress(data))
 
 
 def get_artist_url(search, option="handle"):
@@ -92,7 +93,7 @@ def get_modules(url):
     return mods
     
 def remove_bad_pathchars(path):
-    return re.sub("[\\\?<>\/:*\"]", "", path)
+    return re.sub("[\\\?<>\/:*\"\']", "", path)
 
 def download_modules(url):
     artist = get_artist_info(url)
