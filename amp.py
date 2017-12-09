@@ -16,6 +16,7 @@ import threading
 from queue import Queue
 from bs4 import BeautifulSoup
 
+
 class Artist:
     def __init__(self, handle="", real_name="", country="", ex_handles=[], groups=[]):
         self.handle = handle
@@ -26,6 +27,7 @@ class Artist:
     def __repr__(self):
         return ("Handle: %s\nReal Name: %s\nCountry: %s\nEx Handles: %s\nGroups: %s" 
                 % (self.handle, self.real_name, self.country, ",".join(self.ex_handles), ",".join(self.groups)))
+
 
 class Downloader(threading.Thread):
     def __init__(self, queue):
@@ -128,13 +130,14 @@ def download_modules(url):
         queue.put((path, link))
     # Wait for all threads to finish
     queue.join()
+    print("Done.")
     
 def commands(parser):
     group = parser.add_mutually_exclusive_group()
     parser.add_argument("url", 
-                        help="An URL for a page to download all the modules from.")
-    group.add_argument("-f", "--find", dest="find",
-                        help="Search for an artist on amp.")
+                        help="an URL for a page to download all the modules from.")
+    group.add_argument("-f", "--find", dest="artist",
+                        help="search for an artist on amp.")
     return parser
     
 if __name__ == "__main__":
@@ -153,6 +156,6 @@ if __name__ == "__main__":
             download_modules(content) 
         else:
             print("ERROR: Not a valid amp.dascene.net URL.")
-    elif args.find:
-        artist_url = get_artist_url(args.find)
+    elif args.artist:
+        artist_url = get_artist_url(args.artist)
         download_modules(artist_url)
