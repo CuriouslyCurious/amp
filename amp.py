@@ -10,6 +10,7 @@ import re
 import sys
 import gzip
 import argparse
+import magic
 import urllib.request
 import threading
 from queue import Queue
@@ -40,9 +41,16 @@ class Downloader(threading.Thread):
     def download(self, path, link):
         data = urllib.request.urlopen(link).read()
         print("Downloading '%s'" % path.split("/")[-1])
-        # Should get a gzip archive as data
-        with open(path+".mod", "wb") as f:
-            f.write(gzip.decompress(data))
+        m = magic.Magic(mime=True)
+        ff = m.from_buffer(data)
+        if "gzip" in ff:
+            # Should get a gzip archive as data
+            with open(path+".mod", "wb") as f:
+                f.write(gzip.decompress(data))
+        else:
+            print(ff)
+            with open(path+".mod", "wb") as f:
+                f.write(data)
 
 
 def get_artist_url(search, option="handle"):
